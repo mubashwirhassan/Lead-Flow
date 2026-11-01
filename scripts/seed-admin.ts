@@ -1,18 +1,44 @@
 // One-time admin seed: creates the first Admin from env vars. All other users
-// come from invitations created inside the website (spec section 3).
-// Run: DATABASE_URL=... ADMIN_EMAIL=... ADMIN_PASSWORD=... npm run seed
+// come from invitations created inside the website.
+// Run: cp .env.example .env (edit values), then `npm run seed`
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
-import { User } from "../src/models/user";
-import { CompanySettings, Agent } from "../src/models/misc";
-import { LeadSource } from "../src/models/leadSource";
+import fs from "fs";
+import path from "path";
+
+// Minimal .env loader so the seed works on any Node version.
+// Precedence: real environment variables win over .env values.
+function loadEnvFile() {
+  const envPath = path.resolve(process.cwd(), ".env");
+  if (!fs.existsSync(envPath)) return;
+  const lines = fs.readFileSync(envPath, "utf8").split("\n");
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    let value = trimmed.slice(eq + 1).trim();
+    // strip surrounding quotes
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
+      value = value.slice(1, -1);
+    }
+    if (!(key in process.env)) process.env[key] = value;
+  }
+}
+
+loadEnvFile();
+
+const { User } = await import("../src/models/user");
+const { CompanySettings, Agent } = await import("../src/models/misc");
+const { LeadSource } = await import("../src/models/leadSource");
 
 async function main() {
   const url = process.env.DATABASE_URL;
   const email = process.env.ADMIN_EMAIL;
   const password = process.env.ADMIN_PASSWORD;
   if (!url || !email || !password) {
-    console.error("DATABASE_URL, ADMIN_EMAIL and ADMIN_PASSWORD are required.");
+    console.error("Missing required settings. Create .env from .env.example and set DATABASE_URL, ADMIN_EMAIL, ADMIN_PASSWORD.");
     process.exit(1);
   }
   await mongoose.connect(url);
