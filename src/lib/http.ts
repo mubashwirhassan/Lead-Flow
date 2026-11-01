@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ZodError, type ZodSchema, type infer as ZodInfer } from "zod";
+import { ZodError, type ZodSchema } from "zod";
 import { ForbiddenError } from "@/lib/rbac";
 import { UnauthorizedError } from "@/lib/auth";
 
@@ -25,7 +25,7 @@ export function handleError(e: unknown) {
   return fail("Internal server error", 500);
 }
 
-export async function parseBody<S extends ZodSchema>(req: Request, schema: S): Promise<ReturnType<typeof schema.parse>> {
+export async function parseBody<S extends ZodSchema>(req: Request, schema: S) {
   let raw: unknown;
   try {
     raw = await req.json();
